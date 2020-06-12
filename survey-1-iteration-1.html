@@ -1,0 +1,144 @@
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+<style>
+    body {
+        padding-left: 20px;
+        width: 650px;
+        font-family: sans-serif;
+    }
+
+    crowd-button {
+        margin-top: 50px;
+    }
+
+    #task2-3 {
+        display: none;
+    }
+
+    .timestamp.active {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .mybtn {
+        background-color: #ddd;
+        font-weight: bold;
+        color: #222;
+        border: none;
+        border-radius: 5px;
+        user-select: none;
+        outline: none;
+        margin: 10px 0;
+        cursor: pointer;
+        padding: 20px;
+        display: block;
+        text-align: center;
+        width: 90px;
+    }
+
+    .mybtn:hover {
+        background-color: #ccc;
+    }
+
+    .mybtn:active {
+        background-color: #bbb;
+    }
+
+    .mybtn.disabled {
+        background-color: #eee;
+        color: #ccc;
+        cursor: default;
+    }
+
+    #claimp {
+        font-size: 20px;
+    }
+</style>
+<crowd-form answer-format="flatten-objects">
+    <h1>About the HIT</h1>
+    <p>In this HIT we would like you to help us fact-check claims related to the coronavirus, also referred to as covid-19. To continue this HIT you first have to watch a few seconds of a given video on YouTube that contains a claim we would like you to fact-check for us. To finish this task you then have to complete Task 1, 2, and 3.</p>
+
+    <h1>The video</h1>
+    <p>Watch the video from <span id="startTime" class="timestamp">${startTime}</span> to <span id="endTime" class="timestamp">${endTime}</span>. Feel free to watch more of the video if you need more context. Click the "Start video"-button to start the video, and the "I am done"-button when you are done watching.</p>
+    <a id="startVideoBtn" class="mybtn">Start video</a>
+    <div id="player"></div>
+    <div id="videoId" style="display: none">${videoId}</div>
+    <a id="doneBtn" class="mybtn disabled">I am done</a>
+    <div id="task2-3">
+        <h1>Tasks</h1>
+        <p>In the video above the following claim is made:</p>
+        <p id="claimp"><i>"<span id="claimTxt">${claimTxt}</span>"</i></p>
+
+        <h2>Task 1</h2>
+        <p>For Task 1 we would like you to tell us how true or false the claim is by selecting one of the following options: "Definitely true", "Mostly true", "Mostly false", and "Definitely false". </p>
+        <crowd-radio-group name="trustworthy">
+            <crowd-radio-button name="definitelyTrue">Definitely true</crowd-radio-button>
+            <crowd-radio-button name="mostlyTrue">Mostly true</crowd-radio-button>
+            <crowd-radio-button name="mostlyFalse">Mostly false</crowd-radio-button>
+            <crowd-radio-button name="definitelyFalse">Definitely false</crowd-radio-button>
+        </crowd-radio-group>
+
+        <h2>Task 2</h2>
+        <p>For Task 2 we would like you to provide a link to a website that proves your answer in Task 1. This website has to be available to everyone for free, it has to be in English, and it has to contain info that substantiates your answer for Task 1. Please make sure that your link goes to the exact webpage where you found the relevant information. For example, if you found your information on Wikipedia, do not provide a link to the front-page, but instead provide a link to the exact article. Finally, do not submit a link to the video you are fact-checking.</p>
+        <crowd-input name="source" label="Link to source (example: http://example.com/the-reason-why)" required></crowd-input>
+
+        <h2>Task 3</h2>
+        <p>For Task 3 we would like you to give an explanation for why the webpage you linked in Task 2 proves your selected answer in Task 1. Feel free to cite the provided webpage. Do not write "Because the webpage says so" or "See the link".</p>
+        <crowd-input name="explanation" label="Your explanation..." required></crowd-input>
+
+        <h1>Feedback (optional):</h1>
+        <p>If you have any general feedback about this HIT, we would love to hear about it, no matter how harsh it is.</p>
+        <crowd-input name="feedback" label="Your feedback"></crowd-input>
+    </div>
+</crowd-form>
+<script>
+    function getVariable(id, placeholder) {
+        const container = document.getElementById(id)
+        const content = container.textContent
+        if (content.startsWith("${")) {
+            container.textContent = placeholder
+            return placeholder
+        } else {
+            return content
+        }
+    }
+
+    function getSeconds(s) {
+        return s.split(":")
+            .reverse()
+            .map((unit, i) => parseInt(unit) * Math.pow(60, i))
+            .reduce((a, b) => a + b)
+    }
+    
+    function changeToTimestamp(time, autoplay = true) {
+        const player = document.getElementById("player")
+        const videoId = getVariable("videoId", "qd2hX721Wjg")
+        player.innerHTML = '<iframe width="600" height="450" src="https://www.youtube.com/embed/' + videoId + '?autoplay=' + autoplay + '&start=' + time + '&end=' + endTime + '" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+    }
+
+    const doneBtn = document.getElementById("doneBtn")
+    doneBtn.addEventListener("click", () => {
+        if (!doneBtn.classList.contains("disabled")) {
+            const survey = document.getElementById("task2-3")
+            survey.style.display = "block"
+            doneBtn.style.display = "none"
+        }
+    })
+
+    const startTime = getSeconds(getVariable("startTime", "0:11"))
+    const endTime = getSeconds(getVariable("endTime", "0:12"))
+    const claimTxt = getSeconds(getVariable("claimTxt", "This is a placeholder claim"))
+
+    const startVideoBtn = document.getElementById("startVideoBtn")
+
+    startVideoBtn.addEventListener("click", () => {
+        startVideoBtn.style.display = "none"
+        const timestampBtns = Array.from(document.getElementsByClassName("timestamp"))
+        timestampBtns.forEach(btn => {
+            btn.classList.add("active")
+            btn.addEventListener("click", () => changeToTimestamp(getSeconds(btn.textContent)))
+        })
+        changeToTimestamp(startTime)
+        setTimeout(() => doneBtn.classList.remove("disabled"), (endTime - startTime + 2) * 1000)
+    })
+</script>
